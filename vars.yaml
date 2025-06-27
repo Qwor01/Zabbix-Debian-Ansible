@@ -1,0 +1,9 @@
+---
+zabbix_server_version: "7.0"
+zabbix_front_host: xxx.xxx.xxx.xxx  
+zabbix_db_host: xxx.xxx.xxx.xxx    
+zabbix_server_host: xxx.xxx.xxx.xxx
+zabbix_db_name: "zabbix"
+zabbix_db_user: zabbix
+mariadb_root_password: dbPassword
+zabbix_db_password: zabbixPassword
