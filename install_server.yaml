@@ -1,0 +1,66 @@
+---
+- name: Install Zabbix Server on Proxmox VM
+  hosts: ZabbixServer
+  become: yes 
+  vars_files:
+    - ./vars.yaml
+  tasks:    
+    - name: Get zabbix package
+      shell: "wget https://repo.zabbix.com/zabbix/{{ zabbix_server_version }}/debian/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_server_version }}+debian12_all.deb"
+
+    - name: Install zabbix packages
+      shell: "dpkg -i zabbix-release_latest_{{ zabbix_server_version }}+debian12_all.deb"
+    
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install zabbix-server and zabbix-agent2
+      apt:
+        name:
+          - zabbix-server-mysql
+          - zabbix-agent2
+        state: present
+        update_cache: yes
+
+    - name: Install zabbix-agent2 plugins
+      apt:
+        name:
+          - zabbix-agent2-plugin-mongodb
+          - zabbix-agent2-plugin-mssql
+          - zabbix-agent2-plugin-postgresql
+        state: present
+        update_cache: yes
+
+    - name: Ensure DBHost is set correctly in zabbix_server.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_server.conf
+        regexp: '^#?DBHost=.*'
+        line: 'DBHost={{ zabbix_db_host }}'
+        backup: yes
+
+    - name: Ensure DBPassword is set correctly in zabbix_server.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_server.conf
+        regexp: '^#?DBHost=.*'
+        line: 'DBPassword={{ zabbix_db_password }}'
+        backup: yes
+
+    - name: Ensure NodeAddress is set correctly in zabbix_server.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_server.conf
+        regexp: '^#?DBHost=.*'
+        line: 'NodeAddress={{ zabbix_server_host }}:10051'
+        backup: yes
+
+    - name: Make sure a Zabbix Server is running
+      ansible.builtin.systemd_service:
+        state: started
+        name: zabbix-server  
+        enabled: true 
+
+    - name: Make sure a Zabbix Agent 2 is running
+      ansible.builtin.systemd_service:
+        state: started
+        name: zabbix-agent2
+        enabled: true       

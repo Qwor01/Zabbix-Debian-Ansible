@@ -1,0 +1,46 @@
+---
+- name: Install and configure Zabbix frontend with NGINX and remote DB
+  hosts: ZabbixFront
+  become: yes
+  vars_files:
+    - ./vars.yaml
+  tasks:
+
+  - name: Get zabbix package
+    shell: "wget https://repo.zabbix.com/zabbix/{{ zabbix_server_version }}/debian/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_server_version }}+debian12_all.deb"
+
+  - name: Install zabbix packages
+    shell: "dpkg -i zabbix-release_latest_{{ zabbix_server_version }}+debian12_all.deb"
+    register: zabbix_repo_install
+
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+    when: zabbix_repo_install is changed
+
+  - name: Install Zabbix frontend with NGINX
+    apt:
+      name:
+        - zabbix-frontend-php
+        - zabbix-apache-conf
+        - zabbix-agent2
+      state: present
+  
+  - name: Install zabbix-agent2 plugins
+    apt:
+      name:
+        - zabbix-agent2-plugin-mongodb
+        - zabbix-agent2-plugin-mssql
+        - zabbix-agent2-plugin-postgresql
+      state: present
+      update_cache: yes
+
+  - name: Make sure services are enabled and started
+    ansible.builtin.systemd_service:
+      name: "{{ item }}"
+      state: started
+      enabled: true
+    loop:
+      - php8.2-fpm
+      - apache2
+      - zabbix-agent2
